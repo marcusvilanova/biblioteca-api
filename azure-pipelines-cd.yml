@@ -1,44 +1,42 @@
-# CD da API Biblioteca
-# Não roda por push: dispara sozinho quando o CI (Biblioteca-CI) termina na main,
-# baixa o JAR que o CI guardou e publica no Web App
+# Pipeline de CD: pega o JAR gerado pelo CI (Biblioteca-CI) e faz o deploy no Web App
 
+# Ela não roda pelo push. Dispara sozinha quando o CI termina na branch main
 trigger: none
 
 resources:
   pipelines:
-  - pipeline: ci
-    source: Biblioteca-CI
-    trigger:
-      branches:
-        include:
-        - main
+    - pipeline: ci
+      source: Biblioteca-CI
+      trigger:
+        branches:
+          include:
+            - main
 
 pool:
-  vmImage: ubuntu-latest
+  vmImage: 'ubuntu-latest'
 
 variables:
-  nomeDoWebApp: "biblioteca-api-rm562380"
+  WEB_APP_NAME: 'biblioteca-api-rm562380'
 
 stages:
-- stage: CD
-  displayName: "CD - Deploy no Azure Web App"
-  jobs:
-  - deployment: PublicarApi
-    displayName: "Deploy Spring Boot"
-    environment: "biblioteca-api-rm562380"
-    strategy:
-      runOnce:
-        deploy:
-          steps:
-          # Baixa o artefato "app" da execução do CI que disparou este CD
-          - download: ci
-            artifact: app
+  - stage: CD
+    displayName: 'CD - Deploy no Azure Web App'
+    jobs:
+      - deployment: Deploy
+        displayName: 'Deploy Spring Boot'
+        environment: 'biblioteca-api-rm562380'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - download: ci
+                  artifact: 'app'
 
-          - task: AzureWebApp@1
-            displayName: "Deploy via Zip Deploy"
-            inputs:
-              azureSubscription: "MyAzureSubscription"
-              appType: "webAppLinux"
-              appName: "$(nomeDoWebApp)"
-              deploymentMethod: "zipDeploy"
-              package: "$(Pipeline.Workspace)/ci/app/**/*.jar"
+                - task: AzureWebApp@1
+                  displayName: 'Deploy via Zip Deploy'
+                  inputs:
+                    azureSubscription: 'MyAzureSubscription'
+                    appType: 'webAppLinux'
+                    appName: '$(WEB_APP_NAME)'
+                    package: '$(Pipeline.Workspace)/ci/app/**/*.jar'
+                    deploymentMethod: 'zipDeploy'

@@ -1,53 +1,49 @@
-# CI da API Biblioteca
-# A cada push na main: prepara o Java, compila, roda os testes e guarda o JAR para o CD usar
+# Pipeline de CI: compila o projeto, roda os testes JUnit e publica o JAR
 
 trigger:
   branches:
     include:
-    - main
+      - main
 
 pool:
-  vmImage: ubuntu-latest
+  vmImage: 'ubuntu-latest'
 
 variables:
-  versaoJava: "17"
-  versaoJdk: "1.17"
-  nomeArtefato: "app"
-  tituloTestes: "Testes JUnit da Biblioteca"
+  JAVA_VERSION: '17'
+  JDK_VERSION: '1.17'
+  ARTIFACT_NAME: 'app'
+  TEST_RUN_TITLE: 'Testes JUnit'
 
 steps:
-- task: JavaToolInstaller@0
-  displayName: "Configurar Java 17"
-  inputs:
-    jdkSourceOption: "PreInstalled"
-    jdkArchitectureOption: "x64"
-    versionSpec: $(versaoJava)
+  - task: JavaToolInstaller@0
+    displayName: 'Configurar Java 17'
+    inputs:
+      versionSpec: $(JAVA_VERSION)
+      jdkArchitectureOption: 'x64'
+      jdkSourceOption: 'PreInstalled'
 
-# Compila, roda os testes e manda o resultado deles para a aba Tests da execução
-- task: Maven@4
-  displayName: "Maven - Compilar e executar testes"
-  inputs:
-    goals: "clean package"
-    mavenPomFile: "pom.xml"
-    javaHomeOption: "JDKVersion"
-    jdkVersionOption: $(versaoJdk)
-    mavenVersionOption: "Default"
-    publishJUnitResults: true
-    testResultsFiles: "**/surefire-reports/TEST-*.xml"
-    testRunTitle: $(tituloTestes)
+  - task: Maven@4
+    displayName: 'Maven - Compilar e executar testes'
+    inputs:
+      mavenPomFile: 'pom.xml'
+      goals: 'clean package'
+      publishJUnitResults: true
+      testResultsFiles: '**/surefire-reports/TEST-*.xml'
+      testRunTitle: $(TEST_RUN_TITLE)
+      javaHomeOption: 'JDKVersion'
+      jdkVersionOption: $(JDK_VERSION)
+      mavenVersionOption: 'Default'
 
-# Separa só o JAR numa pasta própria
-- task: CopyFiles@2
-  displayName: "Preparar artefato JAR"
-  inputs:
-    Contents: "**/target/*.jar"
-    SourceFolder: "$(System.DefaultWorkingDirectory)"
-    TargetFolder: "$(Build.ArtifactStagingDirectory)/$(nomeArtefato)"
+  - task: CopyFiles@2
+    displayName: 'Preparar artefato JAR'
+    inputs:
+      SourceFolder: '$(System.DefaultWorkingDirectory)'
+      Contents: '**/target/*.jar'
+      TargetFolder: '$(Build.ArtifactStagingDirectory)/$(ARTIFACT_NAME)'
 
-# É esse artefato que o CD vai baixar
-- task: PublishPipelineArtifact@1
-  displayName: "Publicar artefato app"
-  inputs:
-    publishLocation: "pipeline"
-    artifact: "$(nomeArtefato)"
-    targetPath: "$(Build.ArtifactStagingDirectory)/$(nomeArtefato)"
+  - task: PublishPipelineArtifact@1
+    displayName: 'Publicar artefato app'
+    inputs:
+      targetPath: '$(Build.ArtifactStagingDirectory)/$(ARTIFACT_NAME)'
+      artifact: '$(ARTIFACT_NAME)'
+      publishLocation: 'pipeline'

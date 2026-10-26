@@ -1,34 +1,38 @@
 /*
-  Banco da API Biblioteca (Azure SQL Database)
 
-  Tabelas: autor e livro. Um autor pode ter varios livros (livro.autor_id aponta para autor.id).
-  O infra/01-criar-banco.sh roda este arquivo logo depois de criar o banco.
-  Cada tabela so e criada se ainda nao existir, entao o script pode rodar mais de uma vez.
+Banco de dados da API Biblioteca (Azure SQL Database)
+
+Tabelas: autor e livro
+Relacionamento: um autor pode ter varios livros (livro.autor_id -> autor.id)
+
+Esse script e executado pelo infra/01-criar-banco.sh logo depois de criar o banco.
+Ele so cria a tabela se ela ainda nao existir, entao pode rodar mais de uma vez.
+
 */
 
--- autor
-IF OBJECT_ID(N'dbo.autor', N'U') IS NULL
+-- Tabela AUTOR
+IF NOT EXISTS (SELECT * FROM sysobjects WHERE name = 'autor' AND xtype = 'U')
 BEGIN
-    CREATE TABLE dbo.autor (
-        id BIGINT IDENTITY(1,1) NOT NULL PRIMARY KEY,
-        nome VARCHAR(100) NOT NULL,
-        nacionalidade VARCHAR(50) NOT NULL
-    );
+  CREATE TABLE autor (
+    id BIGINT IDENTITY(1,1) PRIMARY KEY,
+    nome VARCHAR(100) NOT NULL,
+    nacionalidade VARCHAR(50) NOT NULL
+  );
 END;
 
--- livro (autor_id e a chave estrangeira para autor)
-IF OBJECT_ID(N'dbo.livro', N'U') IS NULL
+-- Tabela LIVRO (autor_id e a chave estrangeira para AUTOR)
+IF NOT EXISTS (SELECT * FROM sysobjects WHERE name = 'livro' AND xtype = 'U')
 BEGIN
-    CREATE TABLE dbo.livro (
-        id BIGINT IDENTITY(1,1) NOT NULL PRIMARY KEY,
-        titulo VARCHAR(150) NOT NULL,
-        ano_publicacao INT NOT NULL,
-        autor_id BIGINT NOT NULL,
-        CONSTRAINT FK_livro_autor FOREIGN KEY (autor_id) REFERENCES dbo.autor (id)
-    );
+  CREATE TABLE livro (
+    id BIGINT IDENTITY(1,1) PRIMARY KEY,
+    titulo VARCHAR(150) NOT NULL,
+    ano_publicacao INT NOT NULL,
+    autor_id BIGINT NOT NULL,
+    CONSTRAINT FK_livro_autor FOREIGN KEY (autor_id) REFERENCES autor(id)
+  );
 END;
 
--- Para conferir os dados depois de cada operacao da API:
+-- Consultas usadas para conferir os dados depois de cada operacao da API
 -- SELECT * FROM autor;
 -- SELECT * FROM livro;
 -- SELECT l.id, l.titulo, l.ano_publicacao, a.nome AS autor FROM livro l JOIN autor a ON a.id = l.autor_id;

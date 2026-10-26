@@ -1,66 +1,73 @@
 #!/bin/bash
-# ------------------------------------------------------------
-# 01 - Infra do banco da API Biblioteca
-# Cria o grupo de recursos, o servidor SQL, o banco (PaaS) e as tabelas.
-# Rodar no Cloud Shell (Bash), com a assinatura certa selecionada:
-#   az account show
-#   az account set --subscription "<nome da assinatura>"
-# ------------------------------------------------------------
 
-# Nomes dos recursos (troque o RM e a região conforme o seu grupo e a política da assinatura)
-RM_GRUPO="rm562380"
-REGIAO="centralus"
-GRUPO_RECURSOS="rg-biblioteca-api"
-SERVIDOR_SQL="sql-biblioteca-$RM_GRUPO-$REGIAO"
-BANCO_SQL="db-biblioteca"
-USUARIO_SQL="user-biblioteca"
+#
+# Script 01 - cria o Grupo de Recursos e o Banco SQL (PaaS) da API Biblioteca
+#
+# Execute no Azure Cloud Shell (Bash)
+#
+# Antes de rodar, confira se esta na assinatura correta
+# az account show
+# az account list -o table
+# az account set --subscription "nome-da-assinatura-correta"
+#
 
-# A senha nunca fica no arquivo: vem da variável SQL_SENHA ou é digitada agora
+# Variáveis (troque o RM pelo seu e a região conforme a sua política)
+RM="rm562380"
+RESOURCE_GROUP_NAME="rg-biblioteca-api"
+LOCATION="centralus"
+SQL_SERVER_NAME="sql-biblioteca-$RM-$LOCATION"
+SQL_DB_NAME="db-biblioteca"
+SQL_ADMIN_USER="user-biblioteca"
+
+# A senha não fica salva no script. Se a variável SQL_SENHA não existir, o script pergunta
 if [ -z "$SQL_SENHA" ]; then
-  read -s -p "Digite a senha do administrador do SQL: " SQL_SENHA
-  echo
+  read -s -p "Senha do administrador do SQL: " SQL_SENHA
+  echo ""
 fi
 export SQL_SENHA
 
-echo "1/5 Registrando o provedor do SQL..."
+# Registrar o serviço utilizado
 az provider register --namespace Microsoft.Sql
 
-echo "2/5 Criando o grupo de recursos $GRUPO_RECURSOS..."
-az group create --location "$REGIAO" --name "$GRUPO_RECURSOS"
+# Criação do Grupo de Recursos
+az group create \
+  --name $RESOURCE_GROUP_NAME \
+  --location "$LOCATION"
 
-echo "3/5 Criando o servidor $SERVIDOR_SQL..."
+# Criar o Servidor SQL
 az sql server create \
-  --resource-group "$GRUPO_RECURSOS" \
-  --name "$SERVIDOR_SQL" \
-  --location "$REGIAO" \
-  --admin-user "$USUARIO_SQL" \
+  --name $SQL_SERVER_NAME \
+  --resource-group $RESOURCE_GROUP_NAME \
+  --location "$LOCATION" \
+  --admin-user $SQL_ADMIN_USER \
   --admin-password "$SQL_SENHA" \
   --enable-public-network true
 
-echo "4/5 Criando o banco $BANCO_SQL (Basic) e liberando o firewall..."
+# Criar o Banco de Dados
 az sql db create \
-  --resource-group "$GRUPO_RECURSOS" \
-  --server "$SERVIDOR_SQL" \
-  --name "$BANCO_SQL" \
+  --resource-group $RESOURCE_GROUP_NAME \
+  --server $SQL_SERVER_NAME \
+  --name $SQL_DB_NAME \
   --service-objective Basic \
   --backup-storage-redundancy Local \
   --zone-redundant false
 
-# Libera todos os IPs, como na aula. Só serve para estudo
+# Liberar o acesso no Firewall do Servidor (somente para estudo, como vimos na aula)
 az sql server firewall-rule create \
-  --resource-group "$GRUPO_RECURSOS" \
-  --server "$SERVIDOR_SQL" \
+  --resource-group $RESOURCE_GROUP_NAME \
+  --server $SQL_SERVER_NAME \
   --name liberaGeral \
   --start-ip-address 0.0.0.0 \
   --end-ip-address 255.255.255.255
 
-echo "5/5 Criando as tabelas com o script.sql..."
-PASTA_ATUAL="$(cd "$(dirname "$0")" && pwd)"
+# Criar as tabelas com o script.sql (ele fica na pasta acima da infra)
+# No Cloud Shell usamos o Invoke-Sqlcmd do PowerShell, igual na aula do banco SQL
+PASTA_DO_SCRIPT="$(cd "$(dirname "$0")" && pwd)"
 if command -v pwsh > /dev/null; then
-  pwsh -NoProfile -Command "Invoke-Sqlcmd -ServerInstance '$SERVIDOR_SQL.database.windows.net' -Database '$BANCO_SQL' -Username '$USUARIO_SQL' -Password \$env:SQL_SENHA -InputFile '$PASTA_ATUAL/../script.sql' -ErrorAction Stop"
+  pwsh -NoProfile -Command "Invoke-Sqlcmd -ServerInstance '$SQL_SERVER_NAME.database.windows.net' -Database '$SQL_DB_NAME' -Username '$SQL_ADMIN_USER' -Password \$env:SQL_SENHA -InputFile '$PASTA_DO_SCRIPT/../script.sql' -ErrorAction Stop"
 else
-  echo "pwsh não encontrado. Rode o script.sql pelo Editor de consultas do Portal."
+  echo "pwsh não encontrado. Execute o script.sql pelo Editor de consultas do Portal."
 fi
 
-echo
-echo "Pronto: $SERVIDOR_SQL.database.windows.net / $BANCO_SQL"
+echo ""
+echo "Banco criado: $SQL_SERVER_NAME.database.windows.net / $SQL_DB_NAME"
