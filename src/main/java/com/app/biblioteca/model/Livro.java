@@ -32,6 +32,9 @@ public class Livro {
     // Classifica o livro pela idade dele (ano atual menos o ano de publicação)
     public String classificar(int anoAtual) {
         int idade = anoAtual - anoPublicacao;
+        if (idade <= 2) {
+            return "Lançamento";
+        }
         if (idade >= 50) {
             return "Clássico";
         }

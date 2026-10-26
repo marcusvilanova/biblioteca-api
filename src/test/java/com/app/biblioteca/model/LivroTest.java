@@ -36,6 +36,13 @@ class LivroTest {
     }
 
     @Test
+    void livroPublicadoHaDoisAnosOuMenosEhLancamento() {
+        Livro livro = criarLivro(2025);
+
+        assertEquals("Lançamento", livro.classificar(2026));
+    }
+
+    @Test
     void livroGuardaOAutor() {
         Livro livro = criarLivro(1990);
         livro.setAutor(new Autor("Jorge Amado", "Brasileira"));
