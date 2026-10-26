@@ -119,13 +119,6 @@ pwsh -NoProfile -Command "Invoke-Sqlcmd -ServerInstance 'sql-biblioteca-rm562380
 
 Troque a tabela e o nome do servidor quando precisar. O Editor de consultas do Portal também serve.
 
-### 8. Entrega
-
-1. Inclua o professor no projeto: Organization settings > Users > Add users, com acesso Basic, projeto `Biblioteca` e os grupos Project Administrators e Contributors.
-2. Grave o vídeo dos passos 06 e 07, do CRUD e dos SELECTs, explicando o que aparece.
-3. Gere o PDF `<nomeGrupo>_pipelines.pdf` (folha de rosto com nome do grupo, RM e nome de todos, link do projeto e link do YouTube) e envie pelo Teams. Só o representante do grupo faz o envio.
-4. Só depois da correção rode `bash infra/03-excluir-recursos.sh` para apagar os recursos da Azure.
-
 ## Rodar os testes na máquina
 
 `mvn clean package`
