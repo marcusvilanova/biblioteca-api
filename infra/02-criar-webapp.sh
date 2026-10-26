@@ -9,11 +9,11 @@
 # Variáveis (troque o RM pelo seu e a região conforme a sua política)
 RM="rm562380"
 RESOURCE_GROUP_NAME="rg-biblioteca-api"
-LOCATION="brazilsouth"
+LOCATION="centralus"
 APP_SERVICE_PLAN="plan-biblioteca-api"
 WEBAPP_NAME="biblioteca-api-$RM"
 RUNTIME="JAVA:17-java17"
-SQL_SERVER_NAME="sql-biblioteca-$RM"
+SQL_SERVER_NAME="sql-biblioteca-$RM-$LOCATION"
 SQL_DB_NAME="db-biblioteca"
 SQL_ADMIN_USER="user-biblioteca"
 
@@ -22,11 +22,11 @@ if [ -z "$SQL_SENHA" ]; then
   read -s -p "Senha do administrador do SQL: " SQL_SENHA
   echo ""
 fi
+export SQL_SENHA
 
 # Testa a senha no banco antes de configurar o Web App
-if command -v sqlcmd > /dev/null; then
-  export SQLCMDPASSWORD="$SQL_SENHA"
-  sqlcmd -S "$SQL_SERVER_NAME.database.windows.net" -d "$SQL_DB_NAME" -U "$SQL_ADMIN_USER" -b -Q "SELECT 1" > /dev/null || { echo "Senha incorreta ou banco indisponível."; exit 1; }
+if command -v pwsh > /dev/null; then
+  pwsh -NoProfile -Command "Invoke-Sqlcmd -ServerInstance '$SQL_SERVER_NAME.database.windows.net' -Database '$SQL_DB_NAME' -Username '$SQL_ADMIN_USER' -Password \$env:SQL_SENHA -Query 'SELECT 1' -ErrorAction Stop | Out-Null" || { echo "Senha incorreta ou banco indisponível."; exit 1; }
 fi
 
 # Registrar o serviço utilizado

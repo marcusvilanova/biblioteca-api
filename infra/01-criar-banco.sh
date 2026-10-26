@@ -14,8 +14,8 @@
 # Variáveis (troque o RM pelo seu e a região conforme a sua política)
 RM="rm562380"
 RESOURCE_GROUP_NAME="rg-biblioteca-api"
-LOCATION="eastus2"
-SQL_SERVER_NAME="sql-biblioteca-$RM"
+LOCATION="centralus"
+SQL_SERVER_NAME="sql-biblioteca-$RM-$LOCATION"
 SQL_DB_NAME="db-biblioteca"
 SQL_ADMIN_USER="user-biblioteca"
 
@@ -24,6 +24,7 @@ if [ -z "$SQL_SENHA" ]; then
   read -s -p "Senha do administrador do SQL: " SQL_SENHA
   echo ""
 fi
+export SQL_SENHA
 
 # Registrar o serviço utilizado
 az provider register --namespace Microsoft.Sql
@@ -60,12 +61,12 @@ az sql server firewall-rule create \
   --end-ip-address 255.255.255.255
 
 # Criar as tabelas com o script.sql (ele fica na pasta acima da infra)
+# No Cloud Shell usamos o Invoke-Sqlcmd do PowerShell, igual na aula do banco SQL
 PASTA_DO_SCRIPT="$(cd "$(dirname "$0")" && pwd)"
-if command -v sqlcmd > /dev/null; then
-  export SQLCMDPASSWORD="$SQL_SENHA"
-  sqlcmd -S "$SQL_SERVER_NAME.database.windows.net" -d "$SQL_DB_NAME" -U "$SQL_ADMIN_USER" -b -i "$PASTA_DO_SCRIPT/../script.sql"
+if command -v pwsh > /dev/null; then
+  pwsh -NoProfile -Command "Invoke-Sqlcmd -ServerInstance '$SQL_SERVER_NAME.database.windows.net' -Database '$SQL_DB_NAME' -Username '$SQL_ADMIN_USER' -Password \$env:SQL_SENHA -InputFile '$PASTA_DO_SCRIPT/../script.sql' -ErrorAction Stop"
 else
-  echo "sqlcmd não encontrado. Execute o script.sql pelo Editor de consultas do Portal."
+  echo "pwsh não encontrado. Execute o script.sql pelo Editor de consultas do Portal."
 fi
 
 echo ""
