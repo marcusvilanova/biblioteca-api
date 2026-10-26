@@ -1,0 +1,42 @@
+# Pipeline de CD: pega o JAR gerado pelo CI (Biblioteca-CI) e faz o deploy no Web App
+
+# Ela não roda pelo push. Dispara sozinha quando o CI termina na branch main
+trigger: none
+
+resources:
+  pipelines:
+    - pipeline: ci
+      source: Biblioteca-CI
+      trigger:
+        branches:
+          include:
+            - main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  WEB_APP_NAME: 'biblioteca-api-rm562380'
+
+stages:
+  - stage: CD
+    displayName: 'CD - Deploy no Azure Web App'
+    jobs:
+      - deployment: Deploy
+        displayName: 'Deploy Spring Boot'
+        environment: 'biblioteca-api-rm562380'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - download: ci
+                  artifact: 'app'
+
+                - task: AzureWebApp@1
+                  displayName: 'Deploy via Zip Deploy'
+                  inputs:
+                    azureSubscription: 'MyAzureSubscription'
+                    appType: 'webAppLinux'
+                    appName: '$(WEB_APP_NAME)'
+                    package: '$(Pipeline.Workspace)/ci/app/**/*.jar'
+                    deploymentMethod: 'zipDeploy'
