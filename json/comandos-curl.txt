@@ -1,0 +1,48 @@
+
+-- Rode os comandos na pasta raiz do projeto (onde fica a pasta json)
+
+-- Endereço da API (troque o RM)
+APP=https://biblioteca-api-rm562380.azurewebsites.net
+
+
+-- AUTOR -------------------------------------------------------
+
+-- CREATE
+curl -X POST $APP/api/autores -H "Content-Type: application/json" -d @json/autor-criar.json
+
+-- READ
+curl $APP/api/autores
+curl $APP/api/autores/1
+
+-- UPDATE
+curl -X PUT $APP/api/autores/1 -H "Content-Type: application/json" -d @json/autor-atualizar.json
+
+
+-- LIVRO -------------------------------------------------------
+
+-- CREATE (o autor com id 1 precisa existir)
+curl -X POST $APP/api/livros -H "Content-Type: application/json" -d @json/livro-criar.json
+
+-- READ
+curl $APP/api/livros
+curl $APP/api/livros/1
+
+-- UPDATE
+curl -X PUT $APP/api/livros/1 -H "Content-Type: application/json" -d @json/livro-atualizar.json
+
+
+-- DELETE ------------------------------------------------------
+
+-- O autor não pode ser removido enquanto tiver livro (retorna 409)
+curl -i -X DELETE $APP/api/autores/1
+
+-- Primeiro remove o livro e depois o autor
+curl -i -X DELETE $APP/api/livros/1
+curl -i -X DELETE $APP/api/autores/1
+
+
+-- CONFERIR NO BANCO (Editor de consultas do Portal) depois de cada comando ----
+
+SELECT * FROM autor;
+SELECT * FROM livro;
+SELECT l.id, l.titulo, l.ano_publicacao, a.nome AS autor FROM livro l JOIN autor a ON a.id = l.autor_id;
